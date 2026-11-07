@@ -1,1 +1,13 @@
-{"name":"verona-spa","version":"1.0.0","type":"module","scripts":{"dev":"vite --host 127.0.0.1","build":"vite build","check":"node --test && vite build"},"devDependencies":{"vite":"^6.1.0"}}
+{
+  "name": "verona-spa",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "check": "node --test tests/*.test.js && vite build"
+  },
+  "devDependencies": {
+    "vite": "^6.1.0"
+  }
+}
