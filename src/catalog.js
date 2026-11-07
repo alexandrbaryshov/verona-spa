@@ -1,0 +1,5 @@
+export const booking='https://dikidi.net/1666623?p=1.pi-ssm&o=7';
+export const services=[['Уединение',95,2850,1],['Для него',100,2850,1],['Спа для лица',100,3250,1],['Гармония',120,3550,1],['Время для себя',120,3950,1],['Шоколад',150,4850,1],['Двойное расслабление',140,5700,2],['Мама с дочкой',110,6600,2],['Романтичный вечер',150,6990,2],['Подружки',140,7600,2],['Двойной шоколад',170,10100,2]].map(([name,minutes,price,guests],i)=>({id:`spa-${i}`,name,minutes,price,guests,available:true}));
+export const money=n=>new Intl.NumberFormat('ru-RU').format(n)+' ₽';
+export function match({guests,time=0,budget=0}){return services.filter(s=>s.available&&s.guests===Number(guests)&&(!Number(time)||s.minutes<=Number(time))&&(!Number(budget)||s.price<=Number(budget))).slice(0,3)}
+export function cardText(s){return `VERONA · Карточка вечера\n${s.name}\n${s.guests===1?'Для себя':'Для двоих'} · ${s.minutes} мин · ${money(s.price)}${s.guests===2?' (цену за двух гостей уточните)':''}\nСформирована: ${new Date().toLocaleDateString('ru-RU')}\nКарточка содержит ваши пожелания. Запись и возможность их исполнения подтверждает студия.\n${booking}`}
