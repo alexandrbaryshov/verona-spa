@@ -1,18 +1,55 @@
-import {validSavedAnswers} from './saved-answers.js';
-import {services,match,money,cardText} from './catalog.js';
-const $=s=>document.querySelector(s),form=$('#picker');let step=1,selected=null;const key='verona-evening-v1';
-const status=t=>$('#status').textContent=t;
-function updateSummary(){const a=Object.fromEntries(new FormData(form));const box=$('#answer-summary');box.hidden=!a.guests;box.textContent='Ваш выбор: '+(a.guests==='2'?'Для двоих':'Для себя')+' · '+(Number(a.time)?'до '+a.time+' мин':'Время без ограничения')+' · '+(Number(a.budget)?'до '+money(Number(a.budget)):'Бюджет без ограничения')}
-form.addEventListener('change',updateSummary);
-function showStep(n){step=n;document.querySelectorAll('[data-step]').forEach(el=>el.hidden=Number(el.dataset.step)!==n);$('#progress').textContent=`Шаг ${n} из 3`;$('#back').hidden=n===1;$('#next').textContent=n===3?'Подобрать программу →':'Продолжить →';updateSummary();const heading=form.querySelector('[data-step="'+n+'"] legend');heading.tabIndex=-1;heading.focus();}
-form.addEventListener('submit',e=>{e.preventDefault();if(step<3){showStep(step+1);return}const answers=Object.fromEntries(new FormData(form));const found=match(answers);$('#results').replaceChildren();const title=document.createElement('h3');title.textContent=found.length?'Ваше время для отдыха':'По этим условиям программ не нашлось';$('#results').append(title);if(!found.length){const p=document.createElement('p');p.textContent='В выбранном формате нет программ в пределах времени и бюджета. Измените ограничения или откройте каталог ниже.';$('#results').append(p)}found.forEach(s=>{const b=document.createElement('button');b.className='result';b.textContent=`${s.name} · ${s.minutes} мин · ${money(s.price)} — подходит по формату, времени и бюджету`;b.onclick=()=>choose(s);$('#results').append(b)});$('#results').scrollIntoView({block:'nearest'});});
-$('#back').onclick=()=>showStep(step-1);$('#edit').onclick=()=>{showStep(1);form.scrollIntoView();form.querySelector('input').focus()};
-function choose(s){selected=s;$('#card').hidden=false;$('#card-name').textContent=s.name;$('#card-text').value=cardText(s);$('#card').scrollIntoView({block:'nearest'})}
-$('#copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#card-text').value);status('Текст карточки скопирован.')}catch{status('Не удалось скопировать автоматически. Выделите текст карточки и скопируйте вручную.');$('#card-text').focus();$('#card-text').select()}};
-$('#png').onclick=()=>{try{const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1100;const c=canvas.getContext('2d');if(!c)throw Error();c.fillStyle='#F1EDE5';c.fillRect(0,0,1000,1100);c.fillStyle='#302820';c.font='32px sans-serif';let y=90;for(const paragraph of $('#card-text').value.split('\n')){let line='';for(const word of paragraph.split(' ')){if(c.measureText(line+word).width>850){c.fillText(line,70,y);y+=50;line=''}line+=word+' '}c.fillText(line,70,y);y+=65}const a=document.createElement('a');a.download='verona-evening.png';a.href=canvas.toDataURL('image/png');a.click();status('Карточка подготовлена для сохранения.')}catch{status('Изображение сохранить не удалось. Вы можете скопировать текст карточки.')}};
-$('#save').onclick=()=>{try{localStorage.setItem(key,JSON.stringify({id:selected.id,price:selected.price,answers:Object.fromEntries(new FormData(form))}));$('#restore').hidden=false;status('Вечер сохранён на этом устройстве.')}catch{status('Хранилище недоступно. Скопируйте карточку или сохраните изображение.')}};
-$('#remove').onclick=()=>{try{localStorage.removeItem(key);$('#restore').hidden=true;status('Сохранённый вечер удалён.')}catch{status('Не удалось удалить сохранение: хранилище недоступно.')}};
-$('#fresh').onclick=()=>{$('#card').hidden=true;$('#results').replaceChildren();form.reset();showStep(1);status('Можно собрать новый вечер. Предыдущее сохранение остаётся до удаления или замены.')};
-$('#load').onclick=()=>{try{const saved=JSON.parse(localStorage.getItem(key));const s=services.find(x=>x.id===saved?.id&&x.available);if(!s){status('Сохранённая программа больше недоступна. Соберите новый вечер.');return}if(!validSavedAnswers(saved.answers)){status('Сохранённые формат, время или бюджет устарели или повреждены. Обновите выбор — соберите новый вечер.');return}for(const [name,value] of Object.entries(saved.answers)){if(form.elements[name])form.elements[name].value=value}updateSummary();choose(s);status(saved.price!==s.price?'Цена изменилась. В карточке показана текущая цена.':'Вечер восстановлен. Перед записью уточните актуальную цену в DIKIDI.')}catch{status('Сохранение недоступно или повреждено. Соберите новый вечер.')}};
-try{$('#restore').hidden=!localStorage.getItem(key)}catch{status('Сохранение на устройстве недоступно; подбор продолжает работать.')}
+const sheet=document.querySelector('#booking-sheet');
+document.querySelectorAll('[data-book]').forEach(b=>b.addEventListener('click',()=>sheet.showModal()));
+document.querySelector('.close-sheet').addEventListener('click',()=>sheet.close());
+sheet.addEventListener('click',e=>{if(e.target===sheet){const r=sheet.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)sheet.close();}});
+const floating=document.querySelector('.floating');
+function update(){floating.hidden=window.scrollY<300;}
+window.addEventListener('scroll',update,{passive:true});update();
+document.querySelector('#to-top').addEventListener('click',()=>window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}));
+const gallery=document.querySelector('.studio-gallery');
+const photos=[...gallery.querySelectorAll('img')];
+const frame=document.createElement('div');frame.className='gallery-frame';gallery.before(frame);frame.append(gallery);
+const viewer=document.createElement('dialog');viewer.className='photo-viewer';viewer.setAttribute('aria-label','Фотографии студии');
+const full=document.createElement('img');viewer.append(full);document.body.append(viewer);
+let current=0;
+function show(index){current=(index+photos.length)%photos.length;full.src=photos[current].src;full.alt=photos[current].alt;}
+function control(parent,label,path,action,cls){const b=document.createElement('button');b.type='button';b.className='gallery-control '+cls;b.setAttribute('aria-label',label);b.innerHTML='<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="'+path+'"/></svg>';b.addEventListener('click',action);parent.append(b);}
+for(const [direction,path,label,cls] of [[-1,'m15 5-7 7 7 7','Предыдущее фото','prev'],[1,'m9 5 7 7-7 7','Следующее фото','next']]){
+control(frame,label,path,()=>{const step=photos[1]?.offsetLeft-photos[0].offsetLeft||gallery.clientWidth;gallery.scrollBy({left:direction*step,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});},cls);
+control(viewer,label,path,()=>show(current+direction),cls);
+}
+control(viewer,'Закрыть фото','m6 6 12 12M6 18 18 6',()=>viewer.close(),'photo-close');
+photos.forEach((photo,index)=>{photo.tabIndex=0;photo.setAttribute('role','button');photo.setAttribute('aria-label','Увеличить: '+photo.alt);const open=()=>{show(index);viewer.showModal();};photo.addEventListener('click',open);photo.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});});
+viewer.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')show(current-1);if(e.key==='ArrowRight')show(current+1);});
+viewer.addEventListener('click',e=>{if(e.target===viewer)viewer.close();});
+let start;viewer.addEventListener('touchstart',e=>{start=e.changedTouches[0].clientX;},{passive:true});viewer.addEventListener('touchend',e=>{const delta=e.changedTouches[0].clientX-start;if(Math.abs(delta)>45)show(current+(delta<0?1:-1));},{passive:true});
+
+// A calm position indicator also announces gallery navigation to assistive technology.
+const galleryCount=document.createElement('span');galleryCount.className='gallery-count';galleryCount.setAttribute('aria-live','polite');frame.append(galleryCount);
+function updateGalleryCount(){const nearest=photos.reduce((best,p,i)=>Math.abs(p.offsetLeft-photos[0].offsetLeft-gallery.scrollLeft)<best.distance?{index:i,distance:Math.abs(p.offsetLeft-photos[0].offsetLeft-gallery.scrollLeft)}:best,{index:0,distance:Infinity});galleryCount.textContent=String(nearest.index+1).padStart(2,'0')+' / '+String(photos.length).padStart(2,'0');}
+gallery.addEventListener('scroll',updateGalleryCount,{passive:true});updateGalleryCount();
+const soloLink=document.querySelector('.catalog-feature a');soloLink?.addEventListener('click',()=>{const group=document.querySelector('#solo-programs');if(group)group.open=true;});
+
+// Keep reviews compact, with native horizontal swipe and explicit keyboard controls.
+const reviewSection=document.querySelector('.reviews');
+const reviewTrack=document.createElement('div');reviewTrack.className='review-track';reviewTrack.tabIndex=0;reviewTrack.setAttribute('aria-label','Отзывы гостей — листайте влево или вправо');
+const reviewSlides=[...reviewSection.querySelectorAll('figure')];reviewSlides[0].before(reviewTrack);reviewSlides.forEach((slide,i)=>{slide.setAttribute('role','group');slide.setAttribute('aria-label',`Отзыв ${i+1} из ${reviewSlides.length}`);reviewTrack.append(slide);});
+reviewSection.setAttribute('aria-roledescription','карусель');
+const reviewControls=document.createElement('div');reviewControls.className='review-controls';reviewTrack.after(reviewControls);
+const reviewCounter=document.createElement('span');reviewCounter.setAttribute('aria-live','polite');
+let reviewIndex=0;
+function goReview(delta){reviewIndex=(reviewIndex+delta+reviewSlides.length)%reviewSlides.length;reviewTrack.scrollTo({left:reviewIndex*reviewTrack.clientWidth,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
+control(reviewControls,'Предыдущий отзыв','m15 5-7 7 7 7',()=>goReview(-1),'prev');reviewControls.append(reviewCounter);control(reviewControls,'Следующий отзыв','m9 5 7 7-7 7',()=>goReview(1),'next');
+function syncReview(){reviewIndex=Math.round(reviewTrack.scrollLeft/reviewTrack.clientWidth);reviewCounter.textContent=`${reviewIndex+1} / ${reviewSlides.length}`;}
+reviewTrack.addEventListener('scroll',syncReview,{passive:true});reviewTrack.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();goReview(e.key==='ArrowRight'?1:-1);}});syncReview();
+function fitReview(){reviewTrack.style.height=reviewSlides[reviewIndex].offsetHeight+'px';}
+reviewTrack.addEventListener('scroll',fitReview,{passive:true});window.addEventListener('resize',()=>{reviewTrack.scrollLeft=reviewIndex*reviewTrack.clientWidth;fitReview();});document.fonts.ready.then(fitReview);fitReview();
+const heroVideo=document.querySelector('#hero-video');
+heroVideo.muted=true;
+heroVideo.src=innerWidth<=700?import.meta.env.BASE_URL+'media/face-massage-wide-mobile.mp4':import.meta.env.BASE_URL+'media/face-massage-wide.mp4';
+if(innerWidth<=700)heroVideo.poster=import.meta.env.BASE_URL+'massage/face-massage-mobile.webp';
+async function startHero(){try{await heroVideo.play();}catch{}}
+startHero();
+new IntersectionObserver(entries=>{for(const e of entries){if(!e.isIntersecting)heroVideo.pause();else startHero();}},{threshold:.15}).observe(heroVideo);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)heroVideo.pause();else startHero();});
 

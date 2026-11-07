@@ -6,3 +6,7 @@ __pycache__/
 .DS_Store
 dist/
 .autopilot/serve.*
+
+materials/
+media-work/
+visual-models.json
