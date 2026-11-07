@@ -1,3 +1,4 @@
+import {validSavedAnswers} from './saved-answers.js';
 import {services,match,money,cardText} from './catalog.js';
 const $=s=>document.querySelector(s),form=$('#picker');let step=1,selected=null;const key='verona-evening-v1';
 const status=t=>$('#status').textContent=t;
@@ -12,5 +13,6 @@ $('#png').onclick=()=>{try{const canvas=document.createElement('canvas');canvas.
 $('#save').onclick=()=>{try{localStorage.setItem(key,JSON.stringify({id:selected.id,price:selected.price,answers:Object.fromEntries(new FormData(form))}));$('#restore').hidden=false;status('Вечер сохранён на этом устройстве.')}catch{status('Хранилище недоступно. Скопируйте карточку или сохраните изображение.')}};
 $('#remove').onclick=()=>{try{localStorage.removeItem(key);$('#restore').hidden=true;status('Сохранённый вечер удалён.')}catch{status('Не удалось удалить сохранение: хранилище недоступно.')}};
 $('#fresh').onclick=()=>{$('#card').hidden=true;$('#results').replaceChildren();form.reset();showStep(1);status('Можно собрать новый вечер. Предыдущее сохранение остаётся до удаления или замены.')};
-$('#load').onclick=()=>{try{const saved=JSON.parse(localStorage.getItem(key));const s=services.find(x=>x.id===saved?.id&&x.available);if(!s){status('Сохранённая программа больше недоступна. Соберите новый вечер.');return}for(const [name,value] of Object.entries(saved.answers||{})){if(form.elements[name])form.elements[name].value=value}updateSummary();choose(s);status(saved.price!==s.price?'Цена изменилась. В карточке показана текущая цена.':'Вечер восстановлен. Перед записью уточните актуальную цену в DIKIDI.')}catch{status('Сохранение недоступно или повреждено. Соберите новый вечер.')}};
+$('#load').onclick=()=>{try{const saved=JSON.parse(localStorage.getItem(key));const s=services.find(x=>x.id===saved?.id&&x.available);if(!s){status('Сохранённая программа больше недоступна. Соберите новый вечер.');return}if(!validSavedAnswers(saved.answers)){status('Сохранённые формат, время или бюджет устарели или повреждены. Обновите выбор — соберите новый вечер.');return}for(const [name,value] of Object.entries(saved.answers)){if(form.elements[name])form.elements[name].value=value}updateSummary();choose(s);status(saved.price!==s.price?'Цена изменилась. В карточке показана текущая цена.':'Вечер восстановлен. Перед записью уточните актуальную цену в DIKIDI.')}catch{status('Сохранение недоступно или повреждено. Соберите новый вечер.')}};
 try{$('#restore').hidden=!localStorage.getItem(key)}catch{status('Сохранение на устройстве недоступно; подбор продолжает работать.')}
+
