@@ -1,1 +1,2 @@
 # Границы: catalog.js — данные и чистые функции подбора; app.js — шаги и состояние, storage, clipboard, PNG; style.css — оформление; index.html — статический контент. npm install / npm run dev / npm run check. Не изменять исходные PRODUCT.md VISUAL-CONCEPT.md intrerier. Не публиковать.
+`nДопускается playwright devDependency для браузерной проверки, системный Chromium/Edge. Никакие сетевые интеграции не требуются для подбора.
